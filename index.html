@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>155 mm ERFB/BB — MPMM+BB1 External Ballistics Simulator</title>
+    <style>
+        :root {
+            --bg: #070b12;
+            --panel: #0d1420;
+            --panel2: #111a29;
+            --line: #1d2c44;
+            --txt: #c9d7ea;
+            --dim: #7b90ad;
+            --acc: #3fa9f5;
+            --acc2: #ffb347;
+            --ok: #3ddc84;
+            --bad: #ff5566;
+            --warn: #ffcc44;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--bg);
+            color: var(--txt);
+            font: 12px/1.45 "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden
+        }
+
+        #wrap {
+            display: flex;
+            height: 100%;
+            width: 100%
+        }
+
+        /* ---------------- sidebar ---------------- */
+        #side {
+            width: 340px;
+            min-width: 340px;
+            height: 100%;
+            overflow-y: auto;
+            background: var(--panel);
+            border-right: 1px solid var(--line);
+            padding: 10px 12px 60px;
+        }
+
+        #side::-webkit-scrollbar {
+            width: 9px
+        }
+
+        #side::-webkit-scrollbar-thumb {
+            background: #22334d;
+            border-radius: 5px
+        }
+
+        #side h1 {
+            font-size: 14px;
+            margin: 4px 0 12px;
+            letter-spacing: .4px;
+            color: #eaf2ff;
+            font-weight: 600
+        }
+
+        #side h1 span {
+            display: block;
+            font-size: 10px;
+            color: var(--acc);
+            letter-spacing: 2px;
+            font-weight: 400
+        }
+
+        section {
+            background: var(--panel2);
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            padding: 9px 10px 11px;
+            margin-bottom: 9px
+        }
+
+        section h2 {
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            color: var(--acc);
+            margin: 0 0 8px;
+            font-weight: 600
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 5px
+        }
+
+        .row label {
+            flex: 1;
+            color: var(--dim);
+            font-size: 11px
+        }
+
+        .row input[type=number],
+        .row input[type=text],
+        .row select {
+            width: 118px;
+            background: #08101c;
+            border: 1px solid #22344f;
+            color: #dce8f7;
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: 11px;
+            font-family: inherit;
+            outline: none
+        }
+
+        .row input:focus,
+        .row select:focus {
+            border-color: var(--acc)
+        }
+
+        .row input[type=checkbox] {
+            width: auto;
+            accent-color: var(--acc)
+        }
+
+        .row label.cb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--txt);
+            flex: 1
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--line);
+            margin: 8px 0
+        }
+
+        button {
+            width: 100%;
+            margin-top: 6px;
+            padding: 7px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #16233a;
+            color: #cfe0f5;
+            border: 1px solid #26395a;
+            font-family: inherit;
+            font-size: 11.5px;
+            letter-spacing: .4px;
+            transition: .14s
+        }
+
+        button:hover {
+            background: #1d2f4d;
+            border-color: #3a5a86
+        }
+
+        button.primary {
+            background: linear-gradient(180deg, #1b6fb5, #134a7c);
+            border-color: #2b8ad4;
+            color: #fff;
+            font-weight: 600
+        }
+
+        button.primary:hover {
+            background: linear-gradient(180deg, #2282d1, #175c96)
+        }
+
+        button.danger {
+            background: #3a1620;
+            border-color: #63283a;
+            color: #ffb9c4
+        }
+
+        button.danger:hover {
+            background: #4d1c29
+        }
+
+        button:disabled {
+            opacity: .45;
+            cursor: not-allowed
+        }
+
+        /* ---------------- stage ---------------- */
+        #stage {
+            flex: 1;
+            position: relative;
+            overflow: hidden
+        }
+
+        #cv {
+            display: block;
+            width: 100%;
+            height: 100%
+        }
+
+        /* ---------------- HUD ---------------- */
+        #hud {
+            position: absolute;
+            left: 10px;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(9, 16, 27, .86);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 18px;
+            backdrop-filter: blur(6px);
+            pointer-events: none;
+            font-variant-numeric: tabular-nums
+        }
+
+        .kv {
+            display: flex;
+            flex-direction: column;
+            min-width: 78px
+        }
+
+        .kv .k {
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--dim)
+        }
+
+        .kv .v {
+            font-size: 13px;
+            color: #e9f3ff;
+            font-weight: 600
+        }
+
+        .kv .v small {
+            font-size: 9px;
+            color: var(--dim);
+            font-weight: 400
+        }
+
+        #banner {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(9, 16, 27, .9);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 6px 16px;
+            font-size: 12px;
+            color: var(--acc2);
+            display: none;
+            max-width: 70%;
+            text-align: center;
+            pointer-events: none
+        }
+
+        #banner.show {
+            display: block
+        }
+
+        /* ---------------- modal ---------------- */
+        #modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 7, 13, .82);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            backdrop-filter: blur(3px)
+        }
+
+        #modal.show {
+            display: flex
+        }
+
+        .modal-box {
+            background: var(--panel);
+            border: 1px solid #24374f;
+            border-radius: 10px;
+            width: min(940px, 92vw);
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .7)
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--line);
+            background: #0f1927
+        }
+
+        .modal-head h2 {
+            margin: 0;
+            font-size: 14px;
+            color: #eaf2ff;
+            font-weight: 600;
+            letter-spacing: .5px
+        }
+
+        .modal-head button {
+            width: auto;
+            margin: 0;
+            padding: 4px 11px;
+            background: #1b2740;
+            border-color: #2b3f60
+        }
+
+        #modalBody {
+            overflow-y: auto;
+            padding: 16px 18px 26px
+        }
+
+        #modalBody h3 {
+            font-size: 12px;
+            color: var(--acc);
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            margin: 16px 0 7px;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 4px
+        }
+
+        #modalBody h3:first-child {
+            margin-top: 0
+        }
+
+        table.rt {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+            margin-bottom: 6px
+        }
+
+        table.rt td {
+            padding: 3px 8px;
+            border-bottom: 1px solid #16233a
+        }
+
+        table.rt td:first-child {
+            color: var(--dim);
+            width: 58%
+        }
+
+        table.rt td:last-child {
+            text-align: right;
+            color: #dceaf9;
+            font-variant-numeric: tabular-nums;
+            font-family: "Consolas", monospace
+        }
+
+        table.rt tr.hl td {
+            color: var(--acc2);
+            font-weight: 700;
+            background: #131f2f
+        }
+
+        .rep-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 18px
+        }
+
+        .rep-actions button {
+            width: auto;
+            padding: 7px 16px
+        }
+
+        .warn {
+            color: var(--warn)
+        }
+
+        .err {
+            color: var(--bad)
+        }
+
+        .okc {
+            color: var(--ok)
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrap">
+        <aside id="side">
+            <h1>155 mm ERFB/BB TRAJECTORY<span>MPMM + BB1 · STANAG 4355</span></h1>
+
+            <section>
+                <h2>Firing Position</h2>
+                <div class="row"><label>Latitude (°)</label><input id="fireLat" type="number" step="0.0001"
+                        value="49.1234"></div>
+                <div class="row"><label>Longitude (°)</label><input id="fireLon" type="number" step="0.0001"
+                        value="18.1234"></div>
+                <div class="row"><label>Altitude (m MSL)</label><input id="fireAlt" type="number" step="1" value="300">
+                </div>
+            </section>
+
+            <section>
+                <h2>Target</h2>
+                <div class="row"><label>Latitude (°)</label><input id="tgtLat" type="number" step="0.0001"
+                        value="49.4000"></div>
+                <div class="row"><label>Longitude (°)</label><input id="tgtLon" type="number" step="0.0001"
+                        value="18.5000"></div>
+                <div class="row"><label>Altitude (m MSL)</label><input id="tgtAlt" type="number" step="1" value="250">
+                </div>
+                <hr>
+                <div class="row"><label>Range (m)</label><input id="calcRange" type="number" step="100" value="35000">
+                </div>
+                <div class="row"><label>Bearing (mil)</label><input id="calcBearing" type="number" step="1" value="400">
+                </div>
+                <button id="btnCalcTarget">⌖ Compute Target Coordinates</button>
+            </section>
+
+            <section>
+                <h2>Gun &amp; Charge</h2>
+                <div class="row"><label>Propelling charge</label>
+                    <select id="charge">
+                        <option value="D">D — long range (908 m/s)</option>
+                        <option value="AAB">A+A+B (620 m/s)</option>
+                    </select>
+                </div>
+                <div class="row"><label>Quadrant elevation (mil)</label><input id="qe" type="number" step="0.1"
+                        value="800"></div>
+                <div class="row"><label>Azimuth (mil)</label><input id="az" type="number" step="1" value="400"></div>
+                <div class="row"><label>Angle solution</label>
+                    <select id="angleMode">
+                        <option value="low">Low angle</option>
+                        <option value="high">High angle</option>
+                    </select>
+                </div>
+                <div class="row"><label class="cb"><input type="checkbox" id="qeAuto" checked> Auto-solve QE from
+                        coordinates</label></div>
+            </section>
+
+            <section>
+                <h2>Base-Bleed Unit</h2>
+                <div class="row"><label>Fuel type</label><select id="fuel"></select></div>
+                <div class="row"><label>Fuel temperature MT (°C)</label><input id="fuelTemp" type="number" step="1"
+                        value="21"></div>
+                <div class="row"><label>i<sub>BB</sub> drag-reduction factor</label><input id="iBB" type="number"
+                        step="0.01" value="1.00"></div>
+                <div class="row"><label>Ignition delay t<sub>DI</sub> (s)</label><input id="tDI" type="number"
+                        step="0.01" value="0.00"></div>
+            </section>
+
+            <section>
+                <h2>Environment</h2>
+                <div class="row"><label>Wind speed (m/s)</label><input id="windSpeed" type="number" step="0.5"
+                        value="0"></div>
+                <div class="row"><label>Wind from (° true)</label><input id="windDir" type="number" step="5"
+                        value="270"></div>
+                <div class="row"><label class="cb"><input type="checkbox" id="coriolis" checked> Earth rotation
+                        (Coriolis)</label></div>
+            </section>
+
+            <section>
+                <h2>Ballistic Fitting Factors</h2>
+                <div class="row"><label>Q<sub>D</sub> (yaw drag)</label><input id="QD" type="number" step="0.05"
+                        value="1.2"></div>
+                <div class="row"><label>Q<sub>M</sub> (Magnus)</label><input id="QM" type="number" step="0.05"
+                        value="1.2"></div>
+                <div class="row"><label>f<sub>L</sub> (lift)</label><input id="fL" type="number" step="0.05"
+                        value="1.0"></div>
+            </section>
+
+            <section>
+                <h2>Actions</h2>
+                <button id="btnFire" class="primary">▶ FIRE / SIMULATE</button>
+                <button id="btnCEP">◎ Compute CEP (Monte-Carlo)</button>
+                <div class="row" style="margin-top:6px"><label>MC runs</label><input id="mcN" type="number" step="10"
+                        value="120"></div>
+                <button id="btnReport">📄 Generate Report</button>
+                <button id="btnReset" class="danger">⟲ Reset / Reload</button>
+            </section>
+        </aside>
+
+        <div id="stage">
+            <canvas id="cv"></canvas>
+            <div id="banner"></div>
+            <div id="hud">
+                <div class="kv"><span class="k">Time</span><span class="v" id="hT">0.0<small> s</small></span></div>
+                <div class="kv"><span class="k">Speed</span><span class="v" id="hV">0<small> m/s</small></span></div>
+                <div class="kv"><span class="k">Mach</span><span class="v" id="hM">0.00</span></div>
+                <div class="kv"><span class="k">Altitude</span><span class="v" id="hA">0<small> m</small></span></div>
+                <div class="kv"><span class="k">Downrange</span><span class="v" id="hX">0<small> m</small></span></div>
+                <div class="kv"><span class="k">Drift</span><span class="v" id="hD">0<small> m</small></span></div>
+                <div class="kv"><span class="k">Fuel left</span><span class="v" id="hF">0.82<small> kg</small></span>
+                </div>
+                <div class="kv"><span class="k">Spin</span><span class="v" id="hS">0<small> rad/s</small></span></div>
+                <div class="kv"><span class="k">Drag</span><span class="v" id="hR">0<small> N</small></span></div>
+                <div class="kv"><span class="k">Base burn</span><span class="v" id="hB">0<small> N</small></span></div>
+                <div class="kv"><span class="k">Miss dist.</span><span class="v" id="hMiss">—</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h2 id="modalTitle">Report</h2>
+                <button id="modalClose">✕ Close</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        /* =========================================================================
+           1.  PHYSICAL CONSTANTS & SOURCE DATA  (from the 155 mm ERFB/BB document)
+           ========================================================================= */
+
+        const MIL = 2 * Math.PI / 6400;      // 6400 mil = 360°
+        const DEG = Math.PI / 180;
+        const D_REF = 0.155;                   // reference diameter [m]
+        const D_BASE = 0.1409;                  // base (BB unit) diameter [m]
+        const M0 = 47.5;                    // fuzed projectile mass at t=0 [kg]
+        const IX0 = 0.161;                   // axial inertia, initial [kg m²]
+        const IXB = 0.1592;                  // axial inertia, BB burnout [kg m²]
+        const IY0 = 2.1061;                  // transversal inertia, initial
+        const IYB = 2.0367;                  // transversal inertia, burnout
+        const XCG0 = 0.6287;                  // CG from nose, initial [m]
+        const XCGB = 0.6236;                  // CG from nose, burnout [m]
+        const M_FUEL = 0.88;                    // BB fuel mass [kg]
+        const M_CB0 = 0.06;                    // fuel burnt inside the barrel [kg]
+        const G0 = 9.80665;                 // standard gravity [m/s²]
+        const OMEGA_E = 7.292115e-5;             // Earth rotation rate [rad/s]
+        const R_EARTH = 6371000;                 // mean Earth radius [m]
+        const TWIST_CAL = 20;                      // constant twist of rifling [cal/rev]
+
+        // K(p) linear law coefficients (Tab. 3 of the source document)
+        const K_A0 = 0.97283;
+        const K_A1 = 4.72e-4;
+
+        /* --- aerodynamic coefficient table  C = f(Mach) ---------------------------
+           M , CDa , CDa2 , CLa , CLa3 , Cmag-f , CMa , Cspin                        */
+        const AERO = [
+            // M,   CDa,   CDa2,   CLa,    CLa3,   CMagf,  CMa,   Cspin
+            [0.400, 0.138, 4.1710, 1.30220, 20, -0.510, 3.725, -0.01320],
+            [0.600, 0.138, 4.1710, 1.30220, 20, -0.510, 3.733, -0.01320],
+            [0.700, 0.139, 4.4305, 1.31120, 20, -0.510, 3.849, -0.01280],
+            [0.750, 0.140, 4.5500, 1.43020, 20, -0.510, 4.220, -0.01260],
+            [0.800, 0.141, 4.6895, 1.43920, 20, -0.510, 4.276, -0.01240],
+            [0.850, 0.148, 4.9560, 1.45220, 20, -0.545, 4.553, -0.01210],
+            [0.875, 0.152, 5.0840, 1.45820, 20, -0.560, 4.692, -0.01195],
+            [0.900, 0.156, 5.2320, 1.47420, 20, -0.575, 4.830, -0.01180],
+            [0.925, 0.177, 5.4915, 1.42320, 20, -0.650, 4.686, -0.01170],
+            [0.950, 0.199, 5.7505, 1.37120, 20, -0.725, 4.542, -0.01155],
+            [0.975, 0.244, 6.0280, 1.43620, 20, -0.695, 4.565, -0.01155],
+            [1.000, 0.290, 6.2950, 1.49020, 20, -0.665, 4.587, -0.01150],
+            [1.025, 0.309, 6.5755, 1.55120, 20, -0.635, 4.522, -0.01160],
+            [1.050, 0.329, 6.8555, 1.62120, 20, -0.605, 4.457, -0.01175],
+            [1.100, 0.326, 7.4470, 1.69420, 20, -0.575, 4.516, -0.01150],
+            [1.200, 0.318, 8.0510, 1.80220, 20, -0.510, 4.572, -0.01150],
+            [1.350, 0.305, 7.6075, 1.94520, 20, -0.510, 4.599, -0.01130],
+            [1.500, 0.291, 7.1545, 2.08920, 20, -0.510, 4.708, -0.01110],
+            [1.750, 0.269, 6.7155, 2.25120, 20, -0.510, 4.723, -0.01100],
+            [2.000, 0.249, 6.2655, 2.41120, 20, -0.510, 4.649, -0.01110],
+            [2.250, 0.233, 6.0135, 2.51720, 20, -0.510, 4.613, -0.01105],
+            [2.500, 0.216, 5.7620, 2.61420, 20, -0.510, 4.573, -0.01100],
+            [3.000, 0.194, 5.2330, 2.57620, 20, -0.510, 4.327, -0.01070],
+            [3.500, 0.176, 4.9720, 2.54420, 20, -0.510, 4.289, -0.01065],
+        ];
+
+        /* --- drag reduction coefficient C_xBB = f(Mach)  (Fig. 6) ---------------- */
+        const CXBB_TAB = [
+            [0.00, 0.1470], [0.60, 0.1470], [0.80, 0.1462], [0.95, 0.1420], [1.05, 0.1350],
+            [1.20, 0.1240], [1.50, 0.1055], [2.00, 0.0830], [2.50, 0.0620], [3.00, 0.0450],
+            [4.00, 0.0400]
+        ];
+
+        /* --- optimum injection parameter I0 = f(Mach)  (Fig. 7) ------------------ */
+        const I0_TAB = [
+            [0.00, 0.00535], [1.25, 0.00535], [1.40, 0.00495], [1.60, 0.00475], [1.80, 0.00450],
+            [2.00, 0.00430], [2.20, 0.00405], [2.40, 0.00380], [2.60, 0.00340], [2.80, 0.00310],
+            [4.00, 0.00310]
+        ];
+
+        /* --- burning surface S_C = f(m_CB)  (Fig. 9) ----------------------------- */
+        const SC_TAB = [
+            [0.00, 0.0325], [0.06, 0.0324], [0.12, 0.0308], [0.20, 0.0286], [0.30, 0.0256],
+            [0.40, 0.0224], [0.50, 0.0193], [0.60, 0.0158], [0.70, 0.0119], [0.78, 0.0084],
+            [0.84, 0.0050], [0.88, 0.0000]
+        ];
+
+        /* --- base-bleed fuel database ------------------------------------------- */
+        const FUELS = {
+            IA4: { name: 'I-A-4  (standard · Muiden Chemie)', rhoP: 1548, VC0: 0.8337e-3, beta: 2.12229e-3, n: 0.7685, k: 1.539e-4 },
+            IA4H: { name: 'I-A-4  Hot lot  (+15 % burn rate)', rhoP: 1548, VC0: 0.9588e-3, beta: 2.12229e-3, n: 0.7685, k: 1.539e-4 },
+            IA4C: { name: 'I-A-4  Cold lot (−15 % burn rate)', rhoP: 1548, VC0: 0.7086e-3, beta: 2.12229e-3, n: 0.7685, k: 1.539e-4 },
+            HTPB: { name: 'HTPB composite BB fuel (generic)', rhoP: 1620, VC0: 0.9500e-3, beta: 1.80000e-3, n: 0.7500, k: 1.620e-4 },
+            N5: { name: 'N-5 nitroguanidine BB fuel (generic)', rhoP: 1600, VC0: 1.1000e-3, beta: 2.00000e-3, n: 0.7200, k: 1.700e-4 }
+        };
+
+        const CHARGES = {
+            D: { name: 'D  (long-range single increment)', v0: 908 },
+            AAB: { name: 'A+A+B  (modular)', v0: 620 }
+        };
+
+        /* =========================================================================
+           2.  SMALL NUMERIC HELPERS
+           ========================================================================= */
+        const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+        const lerp = (a, b, f) => a + (f) * (b - a);
+
+        function linInterpRow(tab, x) {
+            if (x <= tab[0][0]) return tab[0].slice(1);
+            const n = tab.length;
+            if (x >= tab[n - 1][0]) return tab[n - 1].slice(1);
+            for (let i = 0; i < n - 1; i++) {
+                if (x <= tab[i + 1][0]) {
+                    const f = (x - tab[i][0]) / (tab[i + 1][0] - tab[i][0]);
+                    const out = [];
+                    for (let j = 1; j < tab[i].length; j++) out.push(lerp(tab[i][j], tab[i + 1][j], f));
+                    return out;
+                }
+            }
+            return tab[n - 1].slice(1);
+        }
+        function linInterp1(tab, x) { return linInterpRow(tab, x)[0]; }
+
+        function aeroAt(M) {
+            const r = linInterpRow(AERO, M);
+            return { CDa: r[0], CDa2: r[1], CLa: r[2], CLa3: r[3], Cmagf: r[4], CMa: r[5], Cspin: r[6] };
+        }
+        function CxBBof(M) { return linInterp1(CXBB_TAB, M); }
+        function I0of(M) { return linInterp1(I0_TAB, M); }
+        function ScOf(m) { return Math.max(0, linInterp1(SC_TAB, m)); }
+
+        /* =========================================================================
+           3.  ICAO STANDARD ATMOSPHERE
+           ========================================================================= */
+        function atmosphere(h) {
+            let T, P;
+            if (h < 11000) {
+                T = 288.15 - 0.0065 * h;
+                P = 101325.0 * Math.pow(T / 288.15, 5.2558797);
+            } else if (h < 20000) {
+                T = 216.65;
+                P = 22632.06 * Math.exp(-G0 * (h - 11000) / (287.05287 * 216.65));
+            } else if (h < 32000) {
+                T = 216.65 + 0.001 * (h - 20000);
+                P = 5474.889 * Math.pow(T / 216.65, -34.16319);
+            } else {
+                T = 228.65 + 0.0028 * (h - 32000);
+                P = 868.0187 * Math.pow(T / 228.65, -12.20115);
+            }
+            const rho = P / (287.05287 * T);
+            const a = Math.sqrt(1.4 * 287.05287 * T);
+            return { T, P, rho, a };
+        }
+
+        /* =========================================================================
+           4.  EQUATIONS OF MOTION  —  MPMM + BB1
+               m·du/dt = GF + DF + LF + MF + CF + BBF
+               state = [x1,x2,x3, u1,u2,u3, m_CB, p, t]
+           ========================================================================= */
+        function derivs(s, P) {
+            const x2 = s[1], u1 = s[3], u2 = s[4], u3 = s[5];
+            const mCB = Math.min(s[6], M_FUEL);
+            const p = s[7];
+            const t = s[8];
+
+            const atm = atmosphere(x2);
+            const rho = atm.rho, Pair = atm.P, aSnd = atm.a;
+
+            /* ---- mass & inertia interpolation over burnt fuel -------------------- */
+            const frac = clamp((mCB - M_CB0) / (M_FUEL - M_CB0), 0, 1);
+            const m = M0 - (mCB - M_CB0);
+            const Ix = IX0 + (IXB - IX0) * frac;
+
+            /* ---- gravity --------------------------------------------------------- */
+            const g = G0 * Math.pow(R_EARTH / (R_EARTH + x2), 2);
+            const gv = [0, -g, 0];
+
+            /* ---- relative velocity w.r.t. air ------------------------------------ */
+            const w = P.windVec;
+            const v1 = u1 - w[0], v2 = u2 - w[1], v3 = u3 - w[2];
+            const v = Math.sqrt(v1 * v1 + v2 * v2 + v3 * v3);
+
+            const out = new Array(9).fill(0);
+            if (v < 1e-3) { out[4] = -g; out[8] = 1; return out; }
+
+            const Mach = v / aSnd;
+            const co = aeroAt(Mach);
+
+            /* ---- yaw of repose vector  α_e ---------------------------------------
+               α_e = − 8·Ix·p · (v⃗ × g⃗) / ( πρ d³ (CMa + CMa³·α_e²) · v⁴ )          */
+            const vgx = v2 * gv[2] - v3 * gv[1];
+            const vgy = v3 * gv[0] - v1 * gv[2];
+            const vgz = v1 * gv[1] - v2 * gv[0];
+            let aex = 0, aey = 0, aez = 0, alphaE = 0;
+            for (let it = 0; it < 8; it++) {
+                const den = Math.PI * rho * Math.pow(D_REF, 3) * (co.CMa + co.CMa3 * alphaE * alphaE) * v * v * v * v;
+                const k = den > 1e-14 ? -(8 * Ix * p) / den : 0;
+                aex = k * vgx; aey = k * vgy; aez = k * vgz;
+                alphaE = Math.sqrt(aex * aex + aey * aey + aez * aez);
+            }
+
+            /* ---- aerodynamic radius factor  πρd²/8 ------------------------------- */
+            const kd = Math.PI * rho * D_REF * D_REF / 8;
+
+            /* ---- drag :  DF = −(πρd²/8)(CDa + CDa²·[QD·α_e]²)·v·v⃗ ---------------- */
+            const cd = co.CDa + co.CDa2 * Math.pow(P.QD * alphaE, 2);
+            const Dfac = -kd * cd * v;
+            const DFx = Dfac * v1, DFy = Dfac * v2, DFz = Dfac * v3;
+
+            /* ---- lift :  LF = (πρd²fL/8)(CLa + CLa³α_e²)·v²·α⃗_e ----------------- */
+            const cl = co.CLa + co.CLa3 * alphaE * alphaE;
+            const Lfac = kd * P.fL * cl * v * v;
+            const LFx = Lfac * aex, LFy = Lfac * aey, LFz = Lfac * aez;
+
+            /* ---- Magnus :  MF = −(πρd³ QM p Cmag-f/8)(α⃗_e × v⃗) ------------------ */
+            const km = Math.PI * rho * Math.pow(D_REF, 3) * P.QM * p * co.Cmagf / 8;
+            const mx = aey * v3 - aez * v2;
+            const my = aez * v1 - aex * v3;
+            const mz = aex * v2 - aey * v1;
+            const MFx = -km * mx, MFy = -km * my, MFz = -km * mz;
+
+            /* ---- Coriolis :  CF = −2m(ω⃗ × u⃗) ------------------------------------ */
+            let CFx = 0, CFy = 0, CFz = 0;
+            if (P.useCoriolis) {
+                const om = P.omegaVec;
+                CFx = m * (-2 * (om[1] * u3 - om[2] * u2));
+                CFy = m * (-2 * (om[2] * u1 - om[0] * u3));
+                CFz = m * (-2 * (om[0] * u2 - om[1] * u1));
+            }
+
+            /* ---- base-bleed thrust ------------------------------------------------
+               BBF = +(πρ i_BB d²/8)·f(I)·C_xBB·v²·( v⃗·cosα_e/v + α⃗_e )             */
+            let BBFx = 0, BBFy = 0, BBFz = 0, mdot = 0;
+            P._dbg = P._dbg || {};
+            P._dbg.VC = 0; P._dbg.I = 0; P._dbg.fI = 0; P._dbg.CxBB = 0;
+            P._dbg.dragMag = Math.abs(Dfac) * v;
+            P._dbg.bbMag = 0;
+
+            if (P.useBB && mCB < M_FUEL - 1e-9 && t >= P.tDI) {
+                const fu = P.fuel;
+                const Kp = K_A0 + K_A1 * p;                       // Eq. (13)
+                const VC = fu.VC0 * Math.exp(fu.beta * (P.MT - 21))
+                    * fu.k * Math.pow(Pair, fu.n) * Kp;    // Eq. (12)
+                const S = ScOf(mCB);
+                mdot = VC * fu.rhoP * S;                    // Eq. (11)  [kg/s]
+                const Ipar = 4 * mdot / (Math.PI * D_BASE * D_BASE * rho * v);   // Eq. (8)
+                const I0 = I0of(Mach);
+                const fI = Ipar < I0 ? clamp(Ipar / I0, 0, 1) : 1;     // Eq. (9),(10)
+                const CxB = CxBBof(Mach);
+                const mag = kd * P.iBB * fI * CxB * v * v;
+                const ca = Math.cos(alphaE);
+                BBFx = mag * (v1 * ca / v + aex);
+                BBFy = mag * (v2 * ca / v + aey);
+                BBFz = mag * (v3 * ca / v + aez);
+                P._dbg.VC = VC; P._dbg.I = Ipar; P._dbg.fI = fI; P._dbg.CxBB = CxB;
+                P._dbg.bbMag = Math.hypot(BBFx, BBFy, BBFz);
+            }
+
+            /* ---- assemble -------------------------------------------------------- */
+            out[0] = u1; out[1] = u2; out[2] = u3;
+            out[3] = (DFx + LFx + MFx + CFx + BBFx) / m + gv[0];
+            out[4] = (DFy + LFy + MFy + CFy + BBFy) / m + gv[1];
+            out[5] = (DFz + LFz + MFz + CFz + BBFz) / m + gv[2];
+            out[6] = mdot;                                             // fuel burnt
+            out[7] = (Math.PI * rho * Math.pow(D_REF, 4) / 8) * p * v * co.Cspin / Ix;  // Eq. (14)
+            out[8] = 1;
+            P._dbg.mach = Mach;
+            return out;
+        }
+
+        /* =========================================================================
+           5.  RK4 INTEGRATOR + TRAJECTORY RUNNER
+           ========================================================================= */
+        function axpy(s, k, h) {
+            const o = new Array(9);
+            for (let i = 0; i < 9; i++) o[i] = s[i] + h * k[i];
+            o[6] = clamp(o[6], 0, M_FUEL);
+            return o;
+        }
+        function rk4(s, dt, P) {
+            const k1 = derivs(s, P);
+            const k2 = derivs(axpy(s, k1, dt * 0.5), P);
+            const k3 = derivs(axpy(s, k2, dt * 0.5), P);
+            const k4 = derivs(axpy(s, k3, dt), P);
+            const o = new Array(9);
+            for (let i = 0; i < 9; i++)
+                o[i] = s[i] + dt / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+            o[6] = clamp(o[6], 0, M_FUEL);
+            return o;
+        }
+
+        /**
+         * Integrate a full trajectory.
+         *  P.groundAlt : altitude of the impact plane (m MSL)
+         *  opts.dt     : time step (default P.dt)
+         *  opts.record : collect the flight path
+         */
+        function runTrajectory(P, opts = {}) {
+            const dt = opts.dt ?? P.dt ?? 0.01;
+            const record = !!opts.record;
+
+            const v0 = P.v0;
+            const s0 = [
+                0, P.X2M, 0,
+                v0 * Math.cos(P.QE), v0 * Math.sin(P.QE), 0,
+                M_CB0, P.p0, 0
+            ];
+
+            let s = s0.slice();
+            const pts = record ? [s0.slice()] : null;
+            const groundAlt = P.groundAlt;
+
+            const maxSteps = Math.ceil(400 / dt);
+            let impacted = false;
+            let apex = -Infinity;
+
+            for (let n = 0; n < maxSteps; n++) {
+                const sN = rk4(s, dt, P);
+                if (sN[1] > apex) apex = sN[1];
+
+                if (sN[1] <= groundAlt && sN[4] < 0) {
+                    const denom = s[1] - sN[1];
+                    const f = Math.abs(denom) > 1e-9 ? clamp((s[1] - groundAlt) / denom, 0, 1) : 0;
+                    const hit = new Array(9);
+                    for (let i = 0; i < 9; i++) hit[i] = s[i] + f * (sN[i] - s[i]);
+                    hit[1] = groundAlt;
+                    hit[6] = clamp(hit[6], 0, M_FUEL);
+                    if (record) pts.push(hit.slice());
+                    s = hit;
+                    impacted = true;
+                    break;
+                }
+                s = sN;
+                if (record) pts.push(s.slice());
+            }
+
+            return { final: s, pts, impacted, apex };
+        }
+
+        /* =========================================================================
+           6.  QUADRANT-ELEVATION SOLVER  (shooting method)
+           ========================================================================= */
+        function rangeAtQE(P, QE, dt = 0.02) {
+            const r = runTrajectory({ ...P, QE }, { dt });
+            return r.impacted ? r.final[0] : NaN;
+        }
+
+        function solveQE(P, targetRange, targetAlt, highAngle) {
+            const base = { ...P, groundAlt: targetAlt };
+            const dtScan = 0.03;
+
+            /* --- locate the maximum-range elevation ------------------------------- */
+            let qeMax = 894 * MIL, rMax = -1;
+            for (let qe = 150 * MIL; qe <= 1500 * MIL; qe += 30 * MIL) {
+                const r = rangeAtQE(base, qe, dtScan);
+                if (!isNaN(r) && r > rMax) { rMax = r; qeMax = qe; }
+            }
+            if (targetRange > rMax * 1.005) return { ok: false, reason: 'Target beyond maximum range', maxRange: rMax };
+
+            /* --- bracket & bisect -------------------------------------------------- */
+            let lo, hi;
+            if (!highAngle) {
+                lo = 40 * MIL; hi = qeMax;
+            } else {
+                lo = qeMax; hi = 1500 * MIL;
+            }
+            const f = (qe) => {
+                const r = rangeAtQE(base, qe, 0.012);
+                return isNaN(r) ? (highAngle ? -1e9 : 1e9) : (r - targetRange);
+            };
+            let flo = f(lo), fhi = f(hi);
+            if (flo * fhi > 0) {
+                /* try the other branch as a fallback */
+                if (!highAngle) { lo = qeMax; hi = 1500 * MIL; }
+                else { lo = 40 * MIL; hi = qeMax; }
+                flo = f(lo); fhi = f(hi);
+                if (flo * fhi > 0) return { ok: false, reason: 'No realisable solution for this range/altitude' };
+            }
+            let a = lo, b = hi, fa = flo;
+            for (let i = 0; i < 46; i++) {
+                const c = 0.5 * (a + b);
+                const fc = f(c);
+                if (fa * fc <= 0) { b = c; } else { a = c; fa = fc; }
+            }
+            return { ok: true, qe: 0.5 * (a + b) };
+        }
+
+        /* =========================================================================
+           7.  MONTE-CARLO  →  CEP
+           ========================================================================= */
+        let gaussSpare = null;
+        function gauss() {
+            if (gaussSpare !== null) { const v = gaussSpare; gaussSpare = null; return v; }
+            let u = 0, v = 0, s = 0;
+            do { u = Math.random() * 2 - 1; v = Math.random() * 2 - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
+            const mul = Math.sqrt(-2 * Math.log(s) / s);
+            gaussSpare = v * mul;
+            return u * mul;
+        }
+
+        function buildParams() {
+            const chargeKey = document.getElementById('charge').value;
+            const charge = CHARGES[chargeKey];
+            const fuelKey = document.getElementById('fuel').value;
+            const fuel = FUELS[fuelKey];
+
+            const fireLat = parseFloat(document.getElementById('fireLat').value);
+            const fireLon = parseFloat(document.getElementById('fireLon').value);
+            const fireAlt = parseFloat(document.getElementById('fireAlt').value);
+            const tgtLat = parseFloat(document.getElementById('tgtLat').value);
+            const tgtLon = parseFloat(document.getElementById('tgtLon').value);
+            const tgtAlt = parseFloat(document.getElementById('tgtAlt').value);
+
+            const geo = geoFromLatLon(fireLat, fireLon, tgtLat, tgtLon);
+            const azMil = parseFloat(document.getElementById('az').value);
+
+            const windSpeed = parseFloat(document.getElementById('windSpeed').value) || 0;
+            const windDir = parseFloat(document.getElementById('windDir').value) || 0;
+            const azRad = azMil * MIL;
+
+            /* wind velocity vector expressed in the (1,2,3) firing frame ------------ */
+            const w1 = -windSpeed * Math.cos((windDir * DEG) - azRad);
+            const w3 = -windSpeed * Math.sin((windDir * DEG) - azRad);
+
+            /* Earth rotation vector expressed in the (1,2,3) firing frame ----------- */
+            const latRad = fireLat * DEG;
+            const om = [
+                OMEGA_E * Math.cos(latRad) * Math.cos(azRad),
+                OMEGA_E * Math.sin(latRad),
+                -OMEGA_E * Math.cos(latRad) * Math.sin(azRad)
+            ];
+
+            const v0 = charge.v0;
+            const p0 = 2 * Math.PI * v0 / (TWIST_CAL * D_REF);   // muzzle spin rate
+
+            return {
+                chargeKey, charge, fuelKey, fuel,
+                v0, p0,
+                QE: parseFloat(document.getElementById('qe').value) * MIL,
+                azMil,
+                X2M: fireAlt,
+                groundAlt: tgtAlt,
+                fireLat, fireLon, fireAlt, tgtLat, tgtLon, tgtAlt,
+                geo,
+                windVec: [w1, 0, w3],
+                windSpeed, windDir,
+                omegaVec: om,
+                useCoriolis: document.getElementById('coriolis').checked,
+                MT: parseFloat(document.getElementById('fuelTemp').value) || 21,
+                iBB: parseFloat(document.getElementById('iBB').value),
+                tDI: parseFloat(document.getElementById('tDI').value) || 0,
+                QD: parseFloat(document.getElementById('QD').value),
+                QM: parseFloat(document.getElementById('QM').value),
+                fL: parseFloat(document.getElementById('fL').value),
+                useBB: true,
+                dt: 0.01,
+                angleMode: document.getElementById('angleMode').value,
+                _dbg: {}
+            };
+        }
+
+        function geoFromLatLon(lat1, lon1, lat2, lon2) {
+            const dLat = (lat2 - lat1) * DEG;
+            const dLon = (lon2 - lon1) * DEG;
+            const mLat = ((lat1 + lat2) * 0.5) * DEG;
+            const dN = dLat * R_EARTH;
+            const dE = dLon * R_EARTH * Math.cos(mLat);
+            const range = Math.hypot(dN, dE);
+            let az = Math.atan2(dE, dN);            // clockwise from north
+            if (az < 0) az += 2 * Math.PI;
+            return { range, azimuth: az, dN, dE };
+        }
+
+        /* =========================================================================
+           8.  THREE.JS SCENE
+           ========================================================================= */
+        const canvas = document.getElementById('cv');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x070b12);
+        scene.fog = new THREE.FogExp2(0x070b12, 0.0000075);
+
+        const camera = new THREE.PerspectiveCamera(55, 1, 2, 900000);
+        camera.position.set(-6000, 9000, 14000);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 2000, -15000);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.07;
+        controls.maxPolarAngle = Math.PI * 0.495;
+        controls.screenSpacePanning = false;
+
+        scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x0a1420, 0.85));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.05);
+        sun.position.set(-1, 1.4, 0.8);
+        scene.add(sun);
+
+        /* ---- infinite-looking dual grid ---------------------------------------- */
+        const gridFine = new THREE.GridHelper(24000, 240, 0x1d4a6b, 0x112a42);
+        gridFine.material.transparent = true;
+        gridFine.material.opacity = 0.55;
+        scene.add(gridFine);
+
+        const gridCoarse = new THREE.GridHelper(400000, 400, 0x2a5c82, 0x16304a);
+        gridCoarse.material.transparent = true;
+        gridCoarse.material.opacity = 0.42;
+        scene.add(gridCoarse);
+
+        /* ---- markers ----------------------------------------------------------- */
+        function makeFiringMarker() {
+            const g = new THREE.Group();
+            const base = new THREE.Mesh(
+                new THREE.CylinderGeometry(26, 32, 10, 20),
+                new THREE.MeshStandardMaterial({ color: 0x1f8f4d, emissive: 0x0d4b26, metalness: .4, roughness: .5 }));
+            base.position.y = 5; g.add(base);
+            const barrel = new THREE.Mesh(
+                new THREE.CylinderGeometry(6, 7, 60, 12),
+                new THREE.MeshStandardMaterial({ color: 0x2ecc71, emissive: 0x14532d, metalness: .6, roughness: .4 }));
+            barrel.position.set(0, 34, -26);
+            barrel.rotation.x = Math.PI / 2.55;
+            g.add(barrel);
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.6, 1.6, 320, 6),
+                new THREE.MeshBasicMaterial({ color: 0x2ecc71, transparent: true, opacity: .55 }));
+            pole.position.y = 160; g.add(pole);
+            return g;
+        }
+        function makeTargetMarker() {
+            const g = new THREE.Group();
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(60, 4, 10, 40),
+                new THREE.MeshStandardMaterial({ color: 0xff3b3b, emissive: 0x7a1010, metalness: .4, roughness: .5 }));
+            ring.rotation.x = Math.PI / 2; g.add(ring);
+            const ring2 = new THREE.Mesh(
+                new THREE.TorusGeometry(120, 2.4, 8, 48),
+                new THREE.MeshBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: .4 }));
+            ring2.rotation.x = Math.PI / 2; g.add(ring2);
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.6, 1.6, 320, 6),
+                new THREE.MeshBasicMaterial({ color: 0xff5555, transparent: true, opacity: .55 }));
+            pole.position.y = 160; g.add(pole);
+            return g;
+        }
+        function makeImpactMarker() {
+            const g = new THREE.Group();
+            const sph = new THREE.Mesh(
+                new THREE.SphereGeometry(34, 20, 16),
+                new THREE.MeshStandardMaterial({ color: 0xffb347, emissive: 0x8a4d00, metalness: .3, roughness: .45 }));
+            sph.position.y = 34; g.add(sph);
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(80, 3, 8, 40),
+                new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: .55 }));
+            ring.rotation.x = Math.PI / 2; ring.position.y = 1; g.add(ring);
+            return g;
+        }
+
+        const firingMarker = makeFiringMarker(); scene.add(firingMarker);
+        const targetMarker = makeTargetMarker(); scene.add(targetMarker);
+        const impactMarker = makeImpactMarker(); scene.add(impactMarker);
+        impactMarker.visible = false;
+
+        /* ---- projectile -------------------------------------------------------- */
+        const projGroup = new THREE.Group();
+        const projBody = new THREE.Mesh(
+            new THREE.ConeGeometry(9, 46, 14),
+            new THREE.MeshStandardMaterial({ color: 0xdfe9f5, emissive: 0x2b3b52, metalness: .85, roughness: .25 }));
+        projBody.rotation.x = Math.PI / 2;      // cone points along -z after rotation
+        projGroup.add(projBody);
+        const projGlow = new THREE.Mesh(
+            new THREE.SphereGeometry(24, 12, 10),
+            new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.16 }));
+        projGroup.add(projGlow);
+        projGroup.visible = false;
+        scene.add(projGroup);
+
+        /* ---- trajectory line --------------------------------------------------- */
+        const MAX_PTS = 90000;
+        const trajGeom = new THREE.BufferGeometry();
+        trajGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_PTS * 3), 3));
+        trajGeom.setDrawRange(0, 0);
+        const trajLine = new THREE.Line(trajGeom,
+            new THREE.LineBasicMaterial({ color: 0x4fc3f7, transparent: true, opacity: 0.95 }));
+        trajLine.frustumCulled = false;
+        scene.add(trajLine);
+
+        /* ---- miss-distance connector ------------------------------------------ */
+        const missGeom = new THREE.BufferGeometry();
+        missGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+        const missLine = new THREE.Line(missGeom,
+            new THREE.LineDashedMaterial({ color: 0xff5566, dashSize: 60, gapSize: 40 }));
+        missLine.frustumCulled = false;
+        missLine.visible = false;
+        scene.add(missLine);
+
+        /* =========================================================================
+           9.  SCENE COORDINATE MAPPING
+               physics (1=downrange, 2=up, 3=right)  →  three (x=right, y=up, z=-downrange)
+           ========================================================================= */
+        const P2T = (p1, p2, p3) => new THREE.Vector3(p3, p2, -p1);
+
+        /* =========================================================================
+           10.  APPLICATION STATE
+           ========================================================================= */
+        const APP = {
+            P: null,
+            result: null,
+            pts: null,
+            firing: null,
+            impact: null,
+            targetScene: new THREE.Vector3(),
+            animIdx: 0,
+            playing: false,
+            playSpeed: 6,
+            lastTime: 0,
+            cepResult: null,
+            shotFired: false,
+            aimAz: 0,
+            targetBearing: 0,
+            targetRange: 0
+        };
+
+        /* =========================================================================
+           11.  UI HELPERS
+           ========================================================================= */
+        const $ = id => document.getElementById(id);
+
+        function banner(msg, ms = 2600) {
+            const b = $('banner');
+            b.textContent = msg;
+            b.classList.add('show');
+            clearTimeout(b._t);
+            b._t = setTimeout(() => b.classList.remove('show'), ms);
+        }
+
+        /* populate fuel dropdown */
+        (function initFuels() {
+            const sel = $('fuel');
+            for (const k in FUELS) {
+                const o = document.createElement('option');
+                o.value = k; o.textContent = FUELS[k].name;
+                sel.appendChild(o);
+            }
+            sel.value = 'IA4';
+        })();
+
+        /* =========================================================================
+           12.  SCENE UPDATE
+           ========================================================================= */
+        function updateSceneFromParams(P) {
+            const fireAlt = P.fireAlt;
+
+            firingMarker.position.set(0, 0, 0);
+            firingMarker.scale.setScalar(1);
+
+            const dH = P.tgtAlt - fireAlt;
+            const dx3 = P.geo.range * Math.sin(P.geo.azimuth - P.azMil * MIL);
+            const dx1 = P.geo.range * Math.cos(P.geo.azimuth - P.azMil * MIL);
+            APP.targetScene.set(dx3, dH, -dx1);
+            targetMarker.position.copy(APP.targetScene);
+
+            /* aim the barrel visually */
+            const azRel = P.geo.azimuth - P.azMil * MIL;
+            firingMarker.rotation.y = -azRel;
+        }
+
+        function setTrajectoryToScene(pts, upto) {
+            const pos = trajGeom.attributes.position.array;
+            const n = Math.min(upto, MAX_PTS);
+            const fireAlt = APP.P ? APP.P.fireAlt : 0;
+            for (let i = 0; i < n; i++) {
+                const s = pts[i];
+                pos[i * 3] = s[2];
+                pos[i * 3 + 1] = s[1] - fireAlt;
+                pos[i * 3 + 2] = -s[0];
+            }
+            trajGeom.attributes.position.needsUpdate = true;
+            trajGeom.setDrawRange(0, n);
+            trajGeom.computeBoundingSphere();
+        }
+
+        /* =========================================================================
+           13.  HUD
+           ========================================================================= */
+        function updateHUD(s, extra) {
+            const atm = atmosphere(s[1]);
+            const v = Math.hypot(s[3], s[4], s[5]);
+            $('hT').innerHTML = s[8].toFixed(2) + '<small> s</small>';
+            $('hV').innerHTML = v.toFixed(1) + '<small> m/s</small>';
+            $('hM').textContent = (v / atm.a).toFixed(3);
+            $('hA').innerHTML = s[1].toFixed(0) + '<small> m</small>';
+            $('hX').innerHTML = s[0].toFixed(0) + '<small> m</small>';
+            $('hD').innerHTML = s[2].toFixed(1) + '<small> m</small>';
+            $('hF').innerHTML = Math.max(0, M_FUEL - s[6]).toFixed(3) + '<small> kg</small>';
+            $('hS').innerHTML = s[7].toFixed(0) + '<small> rad/s</small>';
+            if (extra) {
+                $('hR').innerHTML = (extra.drag || 0).toFixed(0) + '<small> N</small>';
+                $('hB').innerHTML = (extra.bb || 0).toFixed(0) + '<small> N</small>';
+            }
+        }
+        function resetHUD() {
+            $('hT').innerHTML = '0.00<small> s</small>';
+            $('hV').innerHTML = '0<small> m/s</small>';
+            $('hM').textContent = '0.000';
+            $('hA').innerHTML = '0<small> m</small>';
+            $('hX').innerHTML = '0<small> m</small>';
+            $('hD').innerHTML = '0<small> m</small>';
+            $('hF').innerHTML = (M_FUEL - M_CB0).toFixed(3) + '<small> kg</small>';
+            $('hS').innerHTML = '0<small> rad/s</small>';
+            $('hR').innerHTML = '0<small> N</small>';
+            $('hB').innerHTML = '0<small> N</small>';
+            $('hMiss').textContent = '—';
+        }
+
+        /* =========================================================================
+           14.  FIRE / SIMULATE
+           ========================================================================= */
+        function fire() {
+            const P = buildParams();
+            APP.P = P;
+
+            updateSceneFromParams(P);
+
+            /* ---- auto QE ---------------------------------------------------------- */
+            let qeSolved = null;
+            if ($('qeAuto').checked) {
+                const tgtX1 = P.geo.range * Math.cos(P.geo.azimuth - P.azMil * MIL);
+                const sol = solveQE(P, tgtX1, P.tgtAlt, P.angleMode === 'high');
+                if (!sol.ok) {
+                    banner('⚠ ' + sol.reason + (sol.maxRange ? '  (max ≈ ' + (sol.maxRange / 1000).toFixed(2) + ' km)' : ''));
+                    return;
+                }
+                qeSolved = sol.qe;
+                P.QE = sol.qe;
+                $('qe').value = (sol.qe / MIL).toFixed(2);
+            } else {
+                P.QE = parseFloat($('qe').value) * MIL;
+            }
+
+            /* ---- run ------------------------------------------------------------- */
+            const res = runTrajectory(P, { dt: 0.008, record: true });
+            APP.result = res;
+            APP.pts = res.pts;
+            APP.shotFired = true;
+
+            const fin = res.final;
+
+            /* ---- impact marker --------------------------------------------------- */
+            const impactScene = P2T(fin[0], fin[1] - P.fireAlt, fin[2]);
+            impactMarker.position.copy(impactScene);
+            impactMarker.visible = true;
+            APP.impact = impactScene.clone();
+
+            /* ---- miss distance --------------------------------------------------- */
+            const tgt = APP.targetScene;
+            const miss = Math.hypot(impactScene.x - tgt.x, impactScene.y - tgt.y, impactScene.z - tgt.z);
+            APP.missDistance = miss;
+
+            const mp = missGeom.attributes.position.array;
+            mp[0] = impactScene.x; mp[1] = impactScene.y; mp[2] = impactScene.z;
+            mp[3] = tgt.x; mp[4] = tgt.y; mp[5] = tgt.z;
+            missGeom.attributes.position.needsUpdate = true;
+            missGeom.computeBoundingSphere();
+            missLine.computeLineDistances();
+            missLine.visible = true;
+
+            $('hMiss').textContent = miss.toFixed(1) + ' m';
+
+            /* ---- draw whole trajectory ------------------------------------------- */
+            setTrajectoryToScene(APP.pts, APP.pts.length);
+
+            /* ---- animation -------------------------------------------------------- */
+            APP.animIdx = 0;
+            APP.playing = true;
+            projGroup.visible = true;
+
+            const vImpact = Math.hypot(fin[3], fin[4], fin[5]);
+            banner(`Fired · QE ${(P.QE / MIL).toFixed(1)} mil · TOF ${fin[8].toFixed(1)} s · range ${(fin[0] / 1000).toFixed(3)} km · miss ${miss.toFixed(1)} m`);
+
+            /* store a summary for the report */
+            APP.summary = {
+                P, res, miss, qeSolved,
+                vImpact,
+                drift: fin[2],
+                apex: res.apex,
+                fuelBurnt: fin[6] - M_CB0,
+                spinEnd: fin[7],
+                tgtX1: P.geo.range * Math.cos(P.geo.azimuth - P.azMil * MIL),
+                tgtX3: P.geo.range * Math.sin(P.geo.azimuth - P.azMil * MIL)
+            };
+        }
+
+        /* =========================================================================
+           15.  CEP (Monte-Carlo)
+           ========================================================================= */
+        function computeCEP() {
+            const P0 = APP.P || buildParams();
+            const N = clamp(parseInt($('mcN').value) || 120, 10, 800);
+
+            const btn = $('btnCEP');
+            btn.disabled = true; btn.textContent = '◎  running ' + N + ' shots…';
+
+            setTimeout(() => {
+                const base = { ...P0 };
+                const tgtX1 = base.geo.range * Math.cos(base.geo.azimuth - base.azMil * MIL);
+                const tgtX3 = base.geo.range * Math.sin(base.geo.azimuth - base.azMil * MIL);
+
+                const impacts = [];
+                let failures = 0;
+
+                for (let i = 0; i < N; i++) {
+                    const Pp = { ...base };
+                    /* dispersions */
+                    Pp.v0 = base.v0 * (1 + 0.0015 * gauss());
+                    Pp.QE = base.QE + 0.5 * MIL * gauss();
+                    Pp.azMil = base.azMil + 0.5 * MIL * gauss();
+                    Pp.iBB = Math.max(0, base.iBB + 0.03 * gauss());
+                    Pp.fL = base.fL + 0.05 * gauss();
+                    Pp.MT = base.MT + 3.0 * gauss();
+
+                    /* random wind */
+                    const ws = Math.max(0, base.windSpeed + 2.5 * gauss());
+                    const wd = base.windDir + 18 * gauss();
+                    const azR = Pp.azMil * MIL;
+                    Pp.windVec = [
+                        -ws * Math.cos(wd * DEG - azR), 0, -ws * Math.sin(wd * DEG - azR)
+                    ];
+
+                    const r = runTrajectory(Pp, { dt: 0.02 });
+                    if (!r.impacted) { failures++; continue; }
+                    impacts.push([r.final[0], r.final[2]]);   // downrange, drift
+                }
+
+                if (impacts.length < 5) {
+                    banner('CEP: not enough valid impacts');
+                    btn.disabled = false; btn.textContent = '◎  Compute CEP (Monte-Carlo)';
+                    return;
+                }
+
+                /* mean point of impact */
+                let mx = 0, my = 0;
+                for (const p of impacts) { mx += p[0]; my += p[1]; }
+                mx /= impacts.length; my /= impacts.length;
+
+                /* standard deviations */
+                let sxx = 0, syy = 0, sxy = 0;
+                for (const p of impacts) {
+                    const dx = p[0] - mx, dy = p[1] - my;
+                    sxx += dx * dx; syy += dy * dy; sxy += dx * dy;
+                }
+                const n = impacts.length;
+                const sdR = Math.sqrt(sxx / (n - 1));
+                const sdD = Math.sqrt(syy / (n - 1));
+                const cov = sxy / (n - 1);
+
+                /* radial errors about MPI */
+                const radii = impacts.map(p => Math.hypot(p[0] - mx, p[1] - my)).sort((a, b) => a - b);
+                const cepMPI = radii[Math.floor(0.5 * radii.length)];
+
+                /* radial errors about the target */
+                const radiiT = impacts.map(p => Math.hypot(p[0] - tgtX1, p[1] - tgtX3)).sort((a, b) => a - b);
+                const r50T = radiiT[Math.floor(0.5 * radiiT.length)];
+                const meanMiss = radiiT.reduce((a, b) => a + b, 0) / radiiT.length;
+
+                /* classical CEP approximations */
+                const cepApprox = 1.1774 * Math.sqrt(0.5 * (sxx + syy) / (n - 1));
+
+                /* range / deflection errors w.r.t. the target */
+                let sumRangeErr = 0, sumDefErr = 0;
+                for (const p of impacts) {
+                    sumRangeErr += (p[0] - tgtX1);
+                    sumDefErr += (p[1] - tgtX3);
+                }
+                const biasRange = sumRangeErr / n;
+                const biasDef = sumDefErr / n;
+
+                APP.cepResult = {
+                    N: n, failures,
+                    mpi: [mx, my],
+                    target: [tgtX1, tgtX3],
+                    sdRange: sdR, sdDefl: sdD, cov,
+                    cepMPI, cepApprox, r50T, meanMiss,
+                    biasRange, biasDef,
+                    impacts
+                };
+
+                btn.disabled = false; btn.textContent = '◎  Compute CEP (Monte-Carlo)';
+                banner(`CEP (MPI) = ${cepMPI.toFixed(1)} m ·  R50 vs target = ${r50T.toFixed(1)} m ·  mean miss = ${meanMiss.toFixed(1)} m`);
+                showReport(true);
+
+            }, 30);
+        }
+
+        /* =========================================================================
+           16.  REPORT
+           ========================================================================= */
+        function fmt(x, d = 2) { return (x == null || isNaN(x)) ? '—' : Number(x).toFixed(d); }
+
+        function showReport(cepOnly = false) {
+            const P = APP.P || buildParams();
+            const S = APP.summary;
+            const C = APP.cepResult;
+
+            let h = '';
+
+            if (S) {
+                const res = S.res, fin = res.final;
+                const atm0 = atmosphere(P.X2M);
+
+                h += `<h3>Fire Mission</h3><table class="rt">`;
+                h += `<tr><td>Propelling charge</td><td>${P.charge.name}</td></tr>`;
+                h += `<tr><td>Muzzle velocity (standard U)</td><td>${fmt(P.v0, 1)} m/s</td></tr>`;
+                h += `<tr><td>Muzzle spin rate p₀</td><td>${fmt(P.p0, 1)} rad/s</td></tr>`;
+                h += `<tr><td>Quadrant elevation QE</td><td>${fmt(P.QE / MIL, 2)} mil  (${fmt(P.QE / DEG, 3)}°)</td></tr>`;
+                h += `<tr><td>Azimuth of fire</td><td>${fmt(P.azMil, 1)} mil  (${fmt(P.azMil * MIL / DEG, 3)}°)</td></tr>`;
+                h += `<tr><td>Bearing to target</td><td>${fmt(APP.targetBearing / MIL, 1)} mil</td></tr>`;
+                h += `<tr><td>Angle solution</td><td>${P.angleMode === 'high' ? 'High angle' : 'Low angle'}</td></tr>`;
+                h += `<tr><td>Base-bleed fuel</td><td>${P.fuel.name}</td></tr>`;
+                h += `<tr><td>Fuel temperature MT</td><td>${fmt(P.MT, 1)} °C</td></tr>`;
+                h += `<tr><td>Ignition delay t<sub>DI</sub></td><td>${fmt(P.tDI, 2)} s</td></tr>`;
+                h += `<tr><td>Wind</td><td>${fmt(P.windSpeed, 1)} m/s from ${fmt(P.windDir, 0)}°</td></tr>`;
+                h += `<tr><td>Coriolis</td><td>${P.useCoriolis ? 'enabled' : 'disabled'}</td></tr>`;
+                h += `<tr><td>Fitting factors Q<sub>D</sub> / Q<sub>M</sub> / f<sub>L</sub> / i<sub>BB</sub></td><td>${fmt(P.QD, 2)} / ${fmt(P.QM, 2)} / ${fmt(P.fL, 2)} / ${fmt(P.iBB, 2)}</td></tr>`;
+                h += `</table>`;
+
+                h += `<h3>Geometry</h3><table class="rt">`;
+                h += `<tr><td>Firing position</td><td>${fmt(P.fireLat, 5)}°, ${fmt(P.fireLon, 5)}° · ${fmt(P.fireAlt, 0)} m MSL</td></tr>`;
+                h += `<tr><td>Target position</td><td>${fmt(P.tgtLat, 5)}°, ${fmt(P.tgtLon, 5)}° · ${fmt(P.tgtAlt, 0)} m MSL</td></tr>`;
+                h += `<tr><td>Horizontal range to target</td><td>${fmt(P.geo.range, 1)} m</td></tr>`;
+                h += `<tr><td>Altitude difference (target − gun)</td><td>${fmt(P.tgtAlt - P.fireAlt, 1)} m</td></tr>`;
+                h += `</table>`;
+
+                h += `<h3>Trajectory Elements (computed)</h3><table class="rt">`;
+                h += `<tr class="hl"><td>Range at impact  X</td><td>${fmt(fin[0], 1)} m</td></tr>`;
+                h += `<tr class="hl"><td>Drift  A<sub>D</sub></td><td>${fmt(fin[2], 1)} m  (${fmt(fin[2] / 1000, 3)} km)</td></tr>`;
+                h += `<tr><td>Total time of flight  T</td><td>${fmt(fin[8], 2)} s</td></tr>`;
+                h += `<tr><td>Trajectory vertex height  Y<sub>S</sub></td><td>${fmt(res.apex - P.X2M, 1)} m AGL  (${fmt(res.apex, 1)} m MSL)</td></tr>`;
+                h += `<tr><td>Velocity at graze  V<sub>ω</sub></td><td>${fmt(S.vImpact, 1)} m/s</td></tr>`;
+                h += `<tr><td>Angle of fall  A<sub>ω</sub></td><td>${fmt(Math.atan2(-fin[4], Math.hypot(fin[3], fin[5])) / DEG, 2)}°</td></tr>`;
+                h += `<tr><td>Impact Mach number</td><td>${fmt(S.vImpact / atmosphere(fin[1]).a, 3)}</td></tr>`;
+                h += `<tr><td>Impact coordinates (scene frame)</td><td>X₁ ${fmt(fin[0], 1)} m · X₃ ${fmt(fin[2], 1)} m</td></tr>`;
+                h += `<tr><td>Impact latitude / longitude</td><td>${fmt(P.tgtLat + (fin[0] * Math.cos(P.azMil * MIL)) / R_EARTH / DEG, 5)}°, ${fmt(P.tgtLon + (fin[0] * Math.sin(P.azMil * MIL)) / (R_EARTH * Math.cos(P.tgtLat * DEG)) / DEG, 5)}°</td></tr>`;
+                h += `</table>`;
+
+                h += `<h3>Base-Bleed Unit</h3><table class="rt">`;
+                h += `<tr><td>Fuel mass loaded  m<sub>f</sub></td><td>${fmt(M_FUEL, 3)} kg</td></tr>`;
+                h += `<tr><td>Fuel burnt inside the barrel  m<sub>CB0</sub></td><td>${fmt(M_CB0, 3)} kg (${fmt(100 * M_CB0 / M_FUEL, 1)} %)</td></tr>`;
+                h += `<tr><td>Fuel burnt during flight</td><td>${fmt(S.fuelBurnt, 4)} kg</td></tr>`;
+                h += `<tr><td>Fuel remaining at impact</td><td>${fmt(Math.max(0, M_FUEL - fin[6]), 4)} kg</td></tr>`;
+                h += `<tr><td>Mass at launch / at impact</td><td>${fmt(M0, 2)} / ${fmt(M0 - (fin[6] - M_CB0), 2)} kg</td></tr>`;
+                h += `<tr><td>Spin rate at impact</td><td>${fmt(fin[7], 1)} rad/s  (${fmt(100 * fin[7] / P.p0, 1)} % of p₀)</td></tr>`;
+                h += `</table>`;
+
+                h += `<h3>Accuracy</h3><table class="rt">`;
+                h += `<tr class="hl"><td>Miss distance (target ↔ impact)</td><td>${fmt(S.miss, 1)} m</td></tr>`;
+                h += `<tr><td>Range error (impact − target, downrange)</td><td>${fmt(fin[0] - S.tgtX1, 1)} m</td></tr>`;
+                h += `<tr><td>Deflection error (impact − target, lateral)</td><td>${fmt(fin[2] - S.tgtX3, 1)} m</td></tr>`;
+                h += `</table>`;
+            }
+
+            if (C) {
+                h += `<h3>Monte-Carlo Dispersion Analysis (${C.N} valid shots${C.failures ? ', ' + C.failures + ' rejected' : ''})</h3><table class="rt">`;
+                h += `<tr><td>Mean point of impact (MPI)</td><td>X₁ ${fmt(C.mpi[0], 1)} m · X₃ ${fmt(C.mpi[1], 1)} m</td></tr>`;
+                h += `<tr><td>Range standard deviation  σ<sub>X</sub></td><td>${fmt(C.sdRange, 2)} m</td></tr>`;
+                h += `<tr><td>Deflection standard deviation  σ<sub>Z</sub></td><td>${fmt(C.sdDefl, 2)} m</td></tr>`;
+                h += `<tr><td>Correlation coefficient  ρ</td><td>${fmt(C.cov / (C.sdRange * C.sdDefl || 1), 4)}</td></tr>`;
+                h += `<tr class="hl"><td>CEP  (50 % radius about the MPI)</td><td>${fmt(C.cepMPI, 1)} m</td></tr>`;
+                h += `<tr><td>CEP  (1.1774·σ̄ approximation)</td><td>${fmt(C.cepApprox, 1)} m</td></tr>`;
+                h += `<tr class="hl"><td>R50  (50 % radius about the target)</td><td>${fmt(C.r50T, 1)} m</td></tr>`;
+                h += `<tr><td>Mean radial miss from target</td><td>${fmt(C.meanMiss, 1)} m</td></tr>`;
+                h += `<tr><td>Bias — range</td><td>${fmt(C.biasRange, 1)} m</td></tr>`;
+                h += `<tr><td>Bias — deflection</td><td>${fmt(C.biasDef, 1)} m</td></tr>`;
+                h += `<tr><td>Dispersion sources</td><td>σ<sub>V0</sub> 0.15 % · σ<sub>QE</sub> 0.5 mil · σ<sub>Az</sub> 0.5 mil · σ<sub>wind</sub> 2.5 m/s · σ<sub>MT</sub> 3 °C</td></tr>`;
+                h += `</table>`;
+            }
+
+            if (!S && !C) {
+                h = `<p class="warn">Nothing to report yet — fire a shot or run a CEP analysis first.</p>`;
+            }
+
+            h += `<h3>Model</h3><table class="rt">`;
+            h += `<tr><td>Trajectory model</td><td>MPMM + BB1 (STANAG 4355, Method 1)</td></tr>`;
+            h += `<tr><td>Equation of motion</td><td>m·du/dt = GF + DF + LF + MF + CF + BBF</td></tr>`;
+            h += `<tr><td>Atmosphere</td><td>ICAO standard</td></tr>`;
+            h += `<tr><td>Gravity model</td><td>inverse-square, g₀ = 9.80665 m/s²</td></tr>`;
+            h += `<tr><td>Integrator</td><td>Runge–Kutta 4, Δt = 0.008 s</td></tr>`;
+            h += `</table>`;
+
+            h += `<div class="rep-actions">
+          <button onclick="window.print()">🖨 Print</button>
+          <button id="repDL">⬇ Download as .txt</button>
+        </div>`;
+
+            $('modalBody').innerHTML = h;
+            $('modalTitle').textContent = cepOnly ? 'CEP / Dispersion Report' : '155 mm ERFB/BB — Ballistic Report';
+            $('modal').classList.add('show');
+
+            const dl = $('repDL');
+            if (dl) dl.onclick = () => {
+                const txt = $('modalBody').innerText;
+                const blob = new Blob([txt], { type: 'text/plain' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = '155mm_ERFB_BB_report.txt';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            };
+        }
+
+        /* =========================================================================
+           17.  RESET
+           ========================================================================= */
+        function resetAll() {
+            APP.pts = null;
+            APP.result = null;
+            APP.summary = null;
+            APP.cepResult = null;
+            APP.animIdx = 0;
+            APP.playing = false;
+            APP.shotFired = false;
+
+            trajGeom.setDrawRange(0, 0);
+            impactMarker.visible = false;
+            missLine.visible = false;
+            projGroup.visible = false;
+
+            resetHUD();
+            banner('Reloaded — ready to fire');
+
+            /* re-centre the view */
+            camera.position.set(-6000, 9000, 14000);
+            controls.target.set(0, 2000, -15000);
+        }
+
+        /* =========================================================================
+           18.  ANIMATION LOOP
+           ========================================================================= */
+        function tick(now) {
+            requestAnimationFrame(tick);
+            const dt = Math.min(0.05, (now - (APP.lastTime || now)) / 1000);
+            APP.lastTime = now;
+
+            /* grid follows the camera → appears infinite */
+            const cx = Math.round(camera.position.x / 100) * 100;
+            const cz = Math.round(camera.position.z / 100) * 100;
+            gridFine.position.set(cx, 0, cz);
+            gridCoarse.position.set(
+                Math.round(camera.position.x / 1000) * 1000, 0,
+                Math.round(camera.position.z / 1000) * 1000);
+
+            /* projectile playback */
+            if (APP.playing && APP.pts && APP.pts.length > 1) {
+                APP.animIdx += APP.playSpeed * dt / 0.008;
+                if (APP.animIdx >= APP.pts.length - 1) {
+                    APP.animIdx = APP.pts.length - 1;
+                    APP.playing = false;
+                }
+                const i = Math.floor(APP.animIdx);
+                const i2 = Math.min(APP.pts.length - 1, i + 1);
+                const f = APP.animIdx - i;
+                const a = APP.pts[i], b = APP.pts[i2];
+                const fireAlt = APP.P.fireAlt;
+
+                const px = lerp(a[2], b[2], f);
+                const py = lerp(a[1], b[1], f) - fireAlt;
+                const pz = -lerp(a[0], b[0], f);
+
+                projGroup.position.set(px, py, pz);
+
+                /* orientation along the velocity vector */
+                const vx = lerp(a[5], b[5], f);
+                const vy = lerp(a[4], b[4], f);
+                const vz = -lerp(a[3], b[3], f);
+                const len = Math.hypot(vx, vy, vz) || 1;
+                const dir = new THREE.Vector3(vx / len, vy / len, vz / len);
+                const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
+                projGroup.quaternion.copy(q);
+
+                /* HUD from the current physics state */
+                const s = [
+                    lerp(a[0], b[0], f), lerp(a[1], b[1], f), lerp(a[2], b[2], f),
+                    lerp(a[3], b[3], f), lerp(a[4], b[4], f), lerp(a[5], b[5], f),
+                    lerp(a[6], b[6], f), lerp(a[7], b[7], f), lerp(a[8], b[8], f)
+                ];
+                const atm = atmosphere(s[1]);
+                const v = Math.hypot(s[3], s[4], s[5]);
+                const co = aeroAt(v / atm.a);
+                const kd = Math.PI * atm.rho * D_REF * D_REF / 8;
+                const drag = kd * co.CDa * v * v;
+                let bb = 0;
+                if (s[6] < M_FUEL && s[8] >= APP.P.tDI) {
+                    bb = kd * APP.P.iBB * CxBBof(v / atm.a) * v * v;
+                }
+                updateHUD(s, { drag, bb });
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        /* =========================================================================
+           19.  UI WIRING
+           ========================================================================= */
+        $('btnFire').addEventListener('click', fire);
+        $('btnCEP').addEventListener('click', computeCEP);
+        $('btnReport').addEventListener('click', () => showReport(false));
+        $('btnReset').addEventListener('click', resetAll);
+        $('modalClose').addEventListener('click', () => $('modal').classList.remove('show'));
+        $('modal').addEventListener('click', e => { if (e.target.id === 'modal') $('modal').classList.remove('show'); });
+
+        $('btnCalcTarget').addEventListener('click', () => {
+            const lat1 = parseFloat($('fireLat').value);
+            const lon1 = parseFloat($('fireLon').value);
+            const rng = parseFloat($('calcRange').value);
+            const brg = parseFloat($('calcBearing').value) * MIL;   // mil → rad
+
+            const dN = rng * Math.cos(brg);
+            const dE = rng * Math.sin(brg);
+            const lat2 = lat1 + (dN / R_EARTH) / DEG;
+            const lon2 = lon1 + (dE / (R_EARTH * Math.cos(((lat1 + lat2) * 0.5) * DEG))) / DEG;
+
+            $('tgtLat').value = lat2.toFixed(5);
+            $('tgtLon').value = lon2.toFixed(5);
+            $('az').value = (brg / MIL).toFixed(1);
+
+            refreshTargetReadout();
+            banner('Target coordinates computed from range & bearing');
+        });
+
+        function refreshTargetReadout() {
+            const lat1 = parseFloat($('fireLat').value), lon1 = parseFloat($('fireLon').value);
+            const lat2 = parseFloat($('tgtLat').value), lon2 = parseFloat($('tgtLon').value);
+            if ([lat1, lon1, lat2, lon2].some(isNaN)) return;
+            const g = geoFromLatLon(lat1, lon1, lat2, lon2);
+            APP.targetBearing = g.azimuth;
+            APP.targetRange = g.range;
+            /* auto-aim azimuth unless the user has typed one */
+            const azEl = $('az');
+            if (!azEl.dataset.touched) {
+                azEl.value = (g.azimuth / MIL).toFixed(1);
+            }
+        }
+
+        ['fireLat', 'fireLon', 'tgtLat', 'tgtLon', 'tgtAlt', 'fireAlt'].forEach(id => {
+            $(id).addEventListener('input', refreshTargetReadout);
+        });
+        $('az').addEventListener('input', e => { e.target.dataset.touched = '1'; });
+
+        /* keyboard shortcut: space = fire */
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault(); fire();
+            }
+        });
+
+        /* resize */
+        function onResize() {
+            const stage = document.getElementById('stage');
+            const w = stage.clientWidth, h = stage.clientHeight;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', onResize);
+
+        /* =========================================================================
+           20.  BOOT
+           ========================================================================= */
+        onResize();
+        resetHUD();
+        refreshTargetReadout();
+
+        /* place the initial markers so the scene is not empty */
+        (function initialLayout() {
+            const P = buildParams();
+            APP.P = P;
+            updateSceneFromParams(P);
+            camera.position.set(-7000, 11000, 16000);
+            controls.target.set(0, 3000, -17000);
+        })();
+
+        requestAnimationFrame(tick);
+
+        /* expose a few helpers for debugging in the console */
+        window.__ballistics = { runTrajectory, solveQE, buildParams, aeroAt, FUELS, CHARGES, APP };
+    </script>
+</body>
+
+</html>
